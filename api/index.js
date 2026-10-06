@@ -16,6 +16,7 @@ app.get("/", (req, res) => {
 app.get("/tasks", (req, res) => {
     db.query("SELECT * FROM tasks", (error, results) => {
         if (error) {
+            console.error("GET /tasks failed:", error);
             return res.status(500).json({
                 message: "database error"
             });
@@ -30,6 +31,7 @@ app.post("/tasks", (req, res) => {
 
     db.query(sql, [title], (error, result) => {
         if (error) {
+            console.error("POST /tasks failed:", error);
             return res.status(500).json({
                 message: "database error"
             });
@@ -49,6 +51,7 @@ app.put("/tasks/:id", (req, res) => {
 
     db.query(sql, [title, completed, id], (error, result) => {
         if (error) {
+            console.error("PUT /tasks/:id failed:", error);
             return res.status(500).json({
                 message: "Database error"
             });
@@ -67,6 +70,7 @@ app.delete("/tasks/:id", (req, res) => {
 
     db.query(sql, [id], (error, result) => {
         if (error) {
+            console.error("DELETE /tasks/:id failed:", error);
             return res.status(500).json({
                 message: "database error"
             });
