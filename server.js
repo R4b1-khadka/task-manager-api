@@ -1,76 +1,79 @@
-require("dotenv").config()
-const express = require("express")
+const express= require("express");
+const cors= require("cors");
+const db = require("./db");
 
-const app = express()
+const app = express();
 
-app.use(express.json())
-let tasks = [
-    {
-        id: 1,
-        title: "Learn React",
-        completed: false
-    },
-    {
-        id: 2,
-        title: "Learn REST API",
-        completed: false
-    }
-]
-app.get("/", (req, res) => {
-    res.json({
-        message: "API is working"
-    })
+app.use(cors());
+app.use(express.json());
+
+app.get("/tasks", (req,res)=>{
+    db.query("SELECT * FROM tasks",
+        (error,results)=>{
+            if(error){
+                return res.status(500).json({
+                    message: "database error"
+                })
+            }
+            res.json(results);
+        }
+    )
 })
 
-    app.get("/tasks", (req,res)=>{
-        res.json(tasks)
-    })
-app.get("/tasks/:id",(req,res)=>{
-    const id= Number(req.params.id)
-    const task= tasks.find(task=>task.id===id);
-    if(!task){
-        return res.status(404).json({
-            message: "task not found"
-        })
-    }
-    res.json(task)
-})
-    app.post("/tasks", (req,res)=>{
-        const {title}= req.body;
-        const newTask= {
-            id:Date.now(),
+app.post("/tasks", (req,res)=>{
+    const {title} = req.body;
+    const sql = `INSERT INTO tasks (title) VALUES (?)`;
+
+    db.query(sql, [title], (error, result)=>{
+        if(error){
+           return  res.status(500).json({
+            message: "database error"
+           })
+        }
+        res.status(201).json({
+            id: result.insertId,
             title: title,
             completed: false
-        }
-        tasks.push(newTask);
-        res.status(201).json(newTask)
-
+        })
     })
-    app.put("/tasks/:id",(req,res)=>{
-        const id= Number(req.params.id)
-        const task= tasks.find(task=>task.id===id);
-        if(!task){
+})
+ app.put("/tasks/:id", (req,res)=>{
+    const id= Number(req.params.id);
+    const {title, completed} = req.body;
+    const sql = `UPDATE tasks SET title= ?, completed = ? WHERE id= ? `
+
+    db.query(sql, [title, completed, id], (error,result)=>{
+        if(error){
+            return res.status(500).json({
+                message: "Database error"
+            })
+        }
+        res.json({
+            id,
+            title,
+            completed
+        })
+    } )
+ })
+ app.delete("/tasks/:id", (req,res)=>{
+    const id= Number(req.params.id);
+    const sql = `DELETE FROM tasks WHERE id = ?` 
+    db.query(sql, [id], (error, result)=>{
+        if(error){
+            res.status(500).json({
+                message: "databse error"
+            })
+        }
+        if(result.affectedRows=== 0){
             return res.status(404).json({
                 message: "task not found"
             })
-
         }
-      if(req.body.title !== undefined) task.title= req.body.title;
-       if(req.body.completed !== undefined) task.completed = req.body.completed;
-        res.json(task);
+        res.status(200).json({
+            message: "task deleted"
+        })
     })
-    app.delete("/tasks/:id", (req,res)=>{
-        const id = Number(req.params.id)
-        const index= tasks.findIndex(task=>task.id===id)
-        if(index=== -1){
-            return res.status(404).json({
-                message: "Task not Found"
-            })
-        }
-        const deletedTask= tasks.splice(index,1)
-        res.json(deletedTask[0]);
-    })
-const port = process.env.PORT || 3000
-app.listen(port, () => {
-    console.log(`Server running on port ${port}`)
+ })
+app.listen(3000, ()=>{
+    console.log("server running on port 3000")
 })
